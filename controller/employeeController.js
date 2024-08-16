@@ -2,9 +2,12 @@ const Employee = require("../model/employeeModel");
 const { v4: uuidv4 } = require("uuid");
 const { validatePassword, createHash } = require("../services/bcrypt");
 const { createJWT } = require("../services/JWT");
+const {info, error} = require("../config/logger");
+const { sendMailToEmployee, sendMailToEmployer } = require("../services/mail");
 
 async function createEmployee(req, res) {
   try {
+    info.info(`createEmployee initiated`);
     const {
       name,
       email,
@@ -13,40 +16,61 @@ async function createEmployee(req, res) {
       salary,
       experience = 0,
     } = req.body;
+    info.info(`createEmployee req.body:${JSON.stringify(req.body)}`);
     if (!name || !email || !phoneNumber || !position || !salary) {
+      error.error(`createEmployee error: Invalid arguments`)
       return res.status(400).send({ message: "Invalid arguments" });
     }
     let employeeData = await Employee.find({ email });
     if (employeeData && employeeData.length > 0) {
+      error.error(`createEmployee error: Email already exists`)
       return res
         .status(400)
         .send({ message: "Email already exist with other user" });
     }
     employeeData = await Employee.find({ phoneNumber });
     if (employeeData && employeeData.length > 0) {
+      error.error(`createEmployee error: Phone number already exists`)
       return res
         .status(400)
         .send({ message: "Phone number already exist with other user" });
     }
 
     const password = Math.floor(Math.random() * 899999) + 100000;
-    console.log("password", password)
     const hashedPassword = await createHash(password.toString());
 
-    await Employee.create({
-      _id: uuidv4(),
+    const id = uuidv4();
+    
+    const userDetails = {
+      _id: id,
       name,
       email,
       phoneNumber,
       position,
       salary,
       experience,
-      password: hashedPassword ,
+      password ,
+    }
+
+    await Employee.create({
+      ...userDetails,
+      password: hashedPassword
     });
+    info.info(`createEmployee id:${id} employee created successfully`)
+
+    await sendMailToEmployee(email, password)
+    .then(()=>info.info(`createEmployee employee mail sent sucessfully: mail:${email}, password:${password}`))
+    .catch((err)=>error.error(`createEmployee employee mail not sent, mail:${email}, psasword:${password}, error:${JSON.stringify(err)}`))
+
+    await sendMailToEmployer(userDetails)
+    .then(()=>info.info(`createEmployee employer mail sent sucessfully`))
+    .catch((err)=>error.error(`createEmployee employer mail not sent, error:${JSON.stringify(err)}`))
+
     res.status(200).send({ message: "Employee created successfully" });
   } catch (err) {
     console.log("error", err);
-    res.status(500).send({ message: "Internal server error" });
+    error.error(`createEmployee error:${JSON.stringify(err)}`)
+    res.status(500).send({ message: "Couldn't create employee" });
   }
 }
 

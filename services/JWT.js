@@ -15,7 +15,6 @@ function createJWT(data){
 function validateJWT(token){
     try{
         const data = jwt.verify(token, secretKey)
-        console.log("da", data)
         return data
     }
     catch(err){

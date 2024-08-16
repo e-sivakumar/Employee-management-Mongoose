@@ -7,9 +7,9 @@ async function createHash(password) {
 
   return new Promise(async (resolve, reject) => {
     const salt = await bcrypt.genSalt(saltRounds);
-    const has = await bcrypt.hash(password, salt);
-    if (has) {
-      resolve(has);
+    const hash = await bcrypt.hash(password, salt);
+    if (hash) {
+      resolve(hash);
     } else {
       reject();
     }

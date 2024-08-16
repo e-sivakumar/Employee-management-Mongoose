@@ -1,4 +1,6 @@
 const secretKey = process.env.JWT_SECRET;
+const httpContext = require("express-http-context");
+const {v4: uuidv4} = require("uuid");
 const jwt = require("jsonwebtoken")
 
 function validateToken(req, res, next){
@@ -7,7 +9,15 @@ function validateToken(req, res, next){
     try{
         const data = jwt.verify(token, secretKey)
         req.userData = data;
-        next()
+        if(req.userData){
+            httpContext.set('x_txn_id', uuidv4())
+            httpContext.set('x_user_id', data.id)
+            httpContext.set('x_api_name', req.originalUrl)
+            next()
+        }
+        else{
+            res.status(401).send({message:"Unauthorized user"})
+        }
     }
     catch(err){
         console.log("validata err", err.message)

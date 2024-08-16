@@ -2,11 +2,12 @@ const Admin = require("../model/adminModel");
 const { createHash, validatePassword } = require("../services/bcrypt");
 const {v4: uuidv4} = require("uuid");
 const { createJWT } = require("../services/JWT");
+const {info, error} = require("../config/logger");
 
 async function createAdmin(req,res){
     try{
         const {name, userName, password} = req.body;
-        console.log("usef", userName)
+        info.info(`createAdmin initiated - name:${name}, userName:${userName}, password:${password}`);
         const hashedPassword = await createHash(password)
         await Admin.create({
             _id: uuidv4(),
@@ -14,10 +15,12 @@ async function createAdmin(req,res){
             name,
             password: hashedPassword
         })
+        info.info(`createAdmin name:${name} admin created`)
         return res.status(200).send({message: "Admin created successfully"})
     }
     catch(err){
-      console.log("createAdmin err", err)
+        console.log("createAdmin err", err)
+        error.error(`createAdmin error: ${JSON.stringify(err)}`)
       res.status(500).send({message:"Internal server error"})
     }
   }
@@ -43,7 +46,8 @@ async function createAdmin(req,res){
         } 
     }
     catch(err){
-      console.log("adminLogin err", err)
+        console.log("adminLogin err", err)
+        error.error(`adminLogin error: ${JSON.stringify(err)}`)
       res.status(500).send({message:"Internal server error"})
     }
   }
