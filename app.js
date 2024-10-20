@@ -3,9 +3,20 @@ const db = require("./db");
 const httpContext = require("express-http-context");
 const employeeRouter = require("./router/employeeRouter");
 const adminRouter = require("./router/adminRouter");
+const swaggerUi = require("swagger-ui-express")
+
+const swaggerDocument = require("./config/swagger.json");
+
 require("dotenv").config();
 
 const app = express();
+
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
+  swaggerOptions: {
+    defaultModelsExpandDepth: -1
+  }
+})
+)
 
 app.use(express.json());
 app.use(httpContext.middleware);
